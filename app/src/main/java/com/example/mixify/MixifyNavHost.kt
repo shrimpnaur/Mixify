@@ -11,6 +11,6 @@ fun MixifyNavHost(navController: NavHostController) {
     NavHost(navController, startDestination = Screen.Splash.route) {
         composable(Screen.Splash.route) { SplashScreen(navController) }
         composable(Screen.Login.route) { LoginScreen(navController) }
-        // composable(Screen.Home.route) { HomeScreen(navController) }
+        composable(Screen.Home.route) { HomeScreen() }
     }
 }

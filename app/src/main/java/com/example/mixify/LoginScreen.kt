@@ -1,59 +1,69 @@
 package com.example.mixify
 
-import androidx.compose.runtime.Composable
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.Modifier
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.compose.material3.*
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.navigation.NavHostController
 
 @Composable
-fun LoginScreen(navController: NavController) {
-    Box(
+fun LoginScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(false) }
+
+    // Set up launcher for Spotify auth activity
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        isLoading = false
+
+        if (result.resultCode == Activity.RESULT_OK) {
+            val token = result.data?.getStringExtra("ACCESS_TOKEN")
+            if (token != null) {
+                // Store token in SharedPreferences
+                val sharedPrefs = context.getSharedPreferences("mixify_prefs", Activity.MODE_PRIVATE)
+                sharedPrefs.edit().putString("spotify_token", token).apply()
+
+                // Navigate to home screen
+                navController.navigate(Screen.Home.route) {
+                    // Clear the back stack so the user can't go back to the login screen
+                    popUpTo(Screen.Login.route) { inclusive = true }
+                }
+            }
+        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0D0D)),
-        contentAlignment = Alignment.Center
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Welcome to Mixify")
 
-            Image(
-                painter = painterResource(id = R.drawable.logo), // Replace with your swirl logo
-                contentDescription = "Logo",
-                modifier = Modifier.size(120.dp)
-            )
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Text(
-                text = "Mixify",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
             Button(
                 onClick = {
-                    // We’ll add Spotify login here later
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1DB954)),
-                shape = RoundedCornerShape(50),
-                modifier = Modifier
-                    .padding(horizontal = 32.dp)
-                    .height(50.dp)
-                    .fillMaxWidth()
+                    isLoading = true
+                    val intent = Intent(context, SpotifyLoginActivity::class.java)
+                    launcher.launch(intent)
+                }
             ) {
-                Text("Login with Spotify", color = Color.White)
+                Text("Login with Spotify")
             }
         }
     }
